@@ -1,5 +1,6 @@
 # playlist_writer.py
 import os
+from mutagen.id3 import ID3
 from pydub import AudioSegment
 
 class PlaylistWriter:
@@ -11,6 +12,13 @@ class PlaylistWriter:
                 if extended:
                     duration = PlaylistWriter.get_audio_duration(file)
                     title = os.path.basename(file)
+                    # Try to get title from ID3 tags
+                    try:
+                        tags = ID3(file)
+                        if 'TIT2' in tags:
+                            title = str(tags['TIT2'])
+                    except:
+                        pass
                     f.write(f"#EXTINF:{duration},{title}\n")
                 f.write(os.path.relpath(file, os.path.dirname(save_path)) + "\n")
 
@@ -20,8 +28,17 @@ class PlaylistWriter:
             f.write("[playlist]\n")
             f.write(f"NumberOfEntries={len(files)}\n\n")
             for i, file in enumerate(files, 1):
+                # Try to get title from ID3 tags
+                title = os.path.basename(file)
+                try:
+                    tags = ID3(file)
+                    if 'TIT2' in tags:
+                        title = str(tags['TIT2'])
+                except:
+                    pass
+                
                 f.write(f"File{i}={os.path.relpath(file, os.path.dirname(save_path))}\n")
-                f.write(f"Title{i}={os.path.basename(file)}\n")
+                f.write(f"Title{i}={title}\n")
                 duration = PlaylistWriter.get_audio_duration(file)
                 f.write(f"Length{i}={duration}\n\n")
             f.write("Version=2\n")

@@ -63,18 +63,24 @@ class FileManager:
     @staticmethod
     def save_thumbnail(source_file, target_file):
         try:
+            # Create new ID3 tag for target
+            audio = MP3(target_file)
+            if not audio.tags:
+                audio.tags = ID3()
+            
             # Extract thumbnail from source
             source_audio = File(source_file)
             if source_audio is None:
-                return
-                
-            # For MP3 files (most common case)
+                return False
+
+            # Handle MP3 source
             if isinstance(source_audio.tags, ID3):
                 for tag in source_audio.tags.values():
                     if tag.FrameID == 'APIC':
-                        # Create new ID3 tags for target
-                        id3 = ID3()
-                        id3.add(
+                        # Remove existing art
+                        audio.tags.delall('APIC')
+                        # Add new art
+                        audio.tags.add(
                             APIC(
                                 encoding=tag.encoding,
                                 mime=tag.mime,
@@ -83,29 +89,73 @@ class FileManager:
                                 data=tag.data
                             )
                         )
-                        # Save the ID3 tags to the target file
-                        id3.save(target_file, v2_version=3)
+                        audio.save()
                         return True
-                        
-            # Handle FLAC
-            elif hasattr(source_audio, 'pictures'):
-                if source_audio.pictures:
-                    target_audio = File(target_file)
-                    if hasattr(target_audio, 'pictures'):
-                        target_audio.pictures = source_audio.pictures
-                        target_audio.save()
-                        return True
-                        
+
+            # Handle FLAC source
+            if hasattr(source_audio, 'pictures') and source_audio.pictures:
+                pic = source_audio.pictures[0]
+                audio.tags.delall('APIC')
+                audio.tags.add(
+                    APIC(
+                        encoding=3,
+                        mime=pic.mime,
+                        type=3,
+                        desc='Cover',
+                        data=pic.data
+                    )
+                )
+                audio.save()
+                return True
+
             # Handle other formats
-            elif hasattr(source_audio.tags, 'images'):
-                if source_audio.tags.images:
-                    target_audio = File(target_file)
-                    if hasattr(target_audio.tags, 'images'):
-                        target_audio.tags.images = source_audio.tags.images
-                        target_audio.save()
-                        return True
-                        
+            if hasattr(source_audio.tags, 'images') and source_audio.tags.images:
+                img = source_audio.tags.images[0]
+                audio.tags.delall('APIC')
+                audio.tags.add(
+                    APIC(
+                        encoding=3,
+                        mime=f'image/{img.mime_type}',
+                        type=3,
+                        desc='Cover',
+                        data=img.data
+                    )
+                )
+                audio.save()
+                return True
+                
         except Exception as e:
             print(f"Error saving thumbnail: {e}")
-            raise  # Re-raise the exception to see what's going wrong
+        return False
+
+    @staticmethod
+    def export_thumbnail(file_path, save_path):
+        """Extract and save album art to a file"""
+        try:
+            audio = File(file_path)
+            if audio is None:
+                return False
+
+            # Handle MP3
+            if isinstance(audio.tags, ID3):
+                for tag in audio.tags.values():
+                    if tag.FrameID in ('APIC', 'PIC'):
+                        with open(save_path, 'wb') as img_file:
+                            img_file.write(tag.data)
+                        return True
+
+            # Handle FLAC
+            if hasattr(audio, 'pictures') and audio.pictures:
+                with open(save_path, 'wb') as img_file:
+                    img_file.write(audio.pictures[0].data)
+                return True
+
+            # Handle other formats
+            if hasattr(audio.tags, 'images') and audio.tags.images:
+                with open(save_path, 'wb') as img_file:
+                    img_file.write(audio.tags.images[0].data)
+                return True
+
+        except Exception as e:
+            print(f"Error exporting thumbnail: {e}")
         return False

@@ -1,3 +1,4 @@
+
 # main.py
 import os
 import sys
@@ -12,6 +13,7 @@ from playlist_writer import PlaylistWriter
 from file_manager import FileManager
 from config import PlaylistFormats
 from AboutDialog import AboutDialog
+from id3_editor import edit_id3_tags
 
 class ThumbnailListWidget(QListWidget):
     def __init__(self, parent=None):
@@ -55,13 +57,21 @@ class PlaylistCreator(QMainWindow):
         
         # Edit ID3 Tags action
         edit_tags_action = QAction('Edit ID3 Tags', self)
+        edit_tags_action.setShortcut('Ctrl+T')
         edit_tags_action.triggered.connect(self.edit_id3_tags)
         file_menu.addAction(edit_tags_action)
+
+        # Export Album Art action
+        export_art_action = QAction('Export Album Art', self)
+        export_art_action.setShortcut('Ctrl+E')
+        export_art_action.triggered.connect(self.export_album_art)
+        file_menu.addAction(export_art_action)
         
         file_menu.addSeparator()
         
         # Quit action
         quit_action = QAction('Quit', self)
+        quit_action.setShortcut('Ctrl+Q')
         quit_action.triggered.connect(self.close)
         file_menu.addAction(quit_action)
         
@@ -74,8 +84,36 @@ class PlaylistCreator(QMainWindow):
         help_menu.addAction(about_action)
 
     def edit_id3_tags(self):
-        # Placeholder for ID3 tag editor
-        QMessageBox.information(self, "Not Implemented", "ID3 tag editing will be implemented soon.")
+        # Get the selected files
+        selected_files = self.get_selected_files_paths()
+        if not selected_files:
+            QMessageBox.warning(self, "Warning", "Please select files to edit tags!")
+            return
+            
+        if edit_id3_tags(selected_files, self):
+            # Refresh the displays
+            self.update_available_files()
+
+    def export_album_art(self):
+        selected_files = self.get_selected_files_paths()
+        if not selected_files:
+            QMessageBox.warning(self, "Warning", "Please select a file to export album art from!")
+            return
+        
+        # For now, just handle the first selected file
+        file_path = selected_files[0]
+        save_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Album Art",
+            "",
+            "Images (*.jpg *.jpeg *.png)"
+        )
+        
+        if save_path:
+            if FileManager.export_thumbnail(file_path, save_path):
+                QMessageBox.information(self, "Success", "Album art exported successfully!")
+            else:
+                QMessageBox.warning(self, "Error", "No album art found or error saving!")
 
     def show_about(self):
         about = AboutDialog(self)

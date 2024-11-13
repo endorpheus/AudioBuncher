@@ -16,9 +16,9 @@ class AboutDialog(QDialog):
         self.app_name = "Audio Buncher"
         self.version = "1.0.0"
         self.description = "Create playlists and combine audio files with thumbnail support"
-        self.author = "Shane Bowman"
-        self.email = "shane@techpath.com"
-        self.website = "https://github.com/shane-bowman"
+        self.author = "Ryon Shane Hall"
+        self.email = "endorpheus@gmail.com"
+        self.website = "https://github.com/endorpheus"
         self.opacity = 0.9
         
         self.color_ball_size = 15

@@ -17,12 +17,22 @@ class AudioCombinerThread(QThread):
 
     def run(self):
         try:
+            total_length = 0
+            # First pass - calculate total length
+            for file in self.files:
+                self.status.emit(f"Analyzing: {os.path.basename(file)}")
+                audio = AudioSegment.from_file(file)
+                total_length += len(audio)
+
             combined = AudioSegment.empty()
-            for i, file in enumerate(self.files):
-                self.status.emit(f"Processing: {os.path.basename(file)}")
+            processed_length = 0
+            # Second pass - combine files
+            for file in self.files:
+                self.status.emit(f"Combining: {os.path.basename(file)}")
                 audio = AudioSegment.from_file(file)
                 combined += audio
-                self.progress.emit(int((i + 1) / len(self.files) * 100))
+                processed_length += len(audio)
+                self.progress.emit(int(processed_length * 100 / total_length))
 
             self.status.emit("Exporting combined audio...")
             # Export with parameters that ensure ID3 tag compatibility
@@ -41,5 +51,5 @@ class AudioCombinerThread(QThread):
 
             self.finished.emit(True, "Audio files combined successfully!")
         except Exception as e:
-            print(f"Error in audio combining: {e}")  # Add debug output
+            print(f"Error in audio combining: {e}")
             self.finished.emit(False, str(e))
