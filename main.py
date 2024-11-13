@@ -44,6 +44,12 @@ class PlaylistCreator(QMainWindow):
         super().__init__()
         self.setWindowTitle("Playlist Creator")
         self.setMinimumSize(1000, 700)
+
+        # Add icon
+        icon_path = os.path.join(os.path.dirname(__file__), 'icons', 'icon.png')
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+
         self.fs_watcher = QFileSystemWatcher()
         self.fs_watcher.directoryChanged.connect(self.update_available_files)
         self.create_menu()
@@ -393,6 +399,12 @@ class PlaylistCreator(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
+
+    # Set app icon
+    icon_path = os.path.join(os.path.dirname(__file__), 'icons', 'icon.png')
+    if os.path.exists(icon_path):
+        app.setWindowIcon(QIcon(icon_path))
+
     window = PlaylistCreator()
     window.show()
     sys.exit(app.exec())
